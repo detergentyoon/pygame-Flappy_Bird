@@ -232,5 +232,47 @@ bird_downflap = pygame.transform.scale2x(pygame.image.load("assets/bluebird-down
 bird_midflap = pygame.transform.scale2x(pygame.image.load("assets/bluebird-midflap.png").convert_alpha())
 bird_upflap = pygame.transform.scale2x(pygame.image.load("assets/bluebird-upflap.png").convert_alpha())
 bird_frames = [bird_downflap, bird_midflap, bird_upflap]
+bird_index = 0
+bird_surface = bird_frames[bird_index]
+bird_rect = bird_surface.get_rect(center = (100, screen_height / 2))
 ```
 3가지 움직임의 새 이미지를 모두 불러옴과 동시에 크기를 2배로 조정합니다. 이후 이 3가지 움직임 이미지가 담긴 변수들을 `bird_frames` 안에 리스트 형태로 저장합니다.
+```python
+BIRDFLAP = pygame.USEREVENT + 1
+pygame.time.set_timer(BIRDFLAP, 200)
+```
+새로운 `USEREVNET` 를 통해 새의 3가지 움직임 표면 이미지가 지속적으로 순환 업데이트되는 logic 을 아래에서 구성할 것입니다.
+
+이전에 같은 `USEREVENT` 로 생성된 `SPAWNPIPE` 와 동일한 종류의 `USEREVENT` 를 생성하지 않기 위해서 `+ 1` 을 추가해야 합니다. 만약 또 다른 `USEREVENT` 를 생성한다면 `+ 2` 로 점점 늘어나는 방식입니다.
+
+`set_timer()` 함수를 통해 `BIRDFLAP` 이벤트가 200ms(0.2s) 마다 발생하도록 합니다. 게임 내에서 지속적으로 날갯짓을 해야하기 때문에 하나의 표면이 업데이트되기 까지의 시간은 이처럼 짧게 설정해야 날갯짓 움직임의 애니메이션 변화가 자연스럽습니다.
+
+`BIRDFLAP` 은 아래 `event loop` 내에서 0.2s 마다 `bird_index` 를 + 1 씩 업데이트하는 기능으로 사용될 것입니다. 
+```python
+if event.type == BIRDFLAP:
+            if bird_index < 2:
+                bird_index += 1
+            else:
+                bird_index = 0
+            
+            bird_surface, bird_rect = bird_animation()
+```
+`bird_index` 은 `+= 1` 에 의해 점차 숫자가 상당히 커질 것이기 때문에 오류 메시지가 매우 빠르게 표시되므로 이 목록이 2보다 커지지 않도록 해야 합니다.
+
+그래서 `if`문을 통해 2보다 작은 경우에만 `bird_index`를 + 1 씩 업데이트하고 2 이상이 되는 순간 다시 0 으로 업데이트합니다.
+
+이후 순환 업데이트가 이루어지는 `bird_index` 를 `bird_frames` 에 적용하여 `bird_frames[bird_index]` 를 통해 리스트 내에 저장된 3가지 표면 이미지를 불러올 수 있게끔 합니다.
+
+지금까지 구성한 animaiting logic 들은 실질적으로 아래의 함수 인자들로 사용되며, 함수를 통해 게임 내에서 3가지 날개 움직임을 화면 상에 그려냅니다.
+```python
+def bird_animation():
+    new_bird = bird_frames[bird_index]
+    new_bird_rect = new_bird.get_rect(center = (100, bird_rect.centery))
+
+    return new_bird, new_bird_rect
+```
+새의 위치 좌표는 x 값은 항상 왼쪽 100px 위치에 고정되어 있지만 y 값은 중력과 점프에 영향을 받는 `bird_movement` 에 의해 계속해서 변화하기 때문에 이전 새의 위치 좌표를 다음 날개 움직임 이미지에 불러와야하고, 이는 `bird_rect.centery` 를 통해 할당할 수 있습니다.
+
+이후 `return` 되는 2가지 반환값들은 `event loop` 의 `BIRDFLAP` 내의 `bird_surface, bird_rect = bird_animation()` 를 통해 할당하여 화면에 반영시킵니다.
+
+# **`7_`**

@@ -1,23 +1,6 @@
 import pygame, random
 
-pygame.init()
-
-screen_width = 576
-screen_height = 1024
-screen = pygame.display.set_mode((screen_width, screen_height))
-
-pygame.display.set_caption("Flappy Bird")
-
-# FPS
-clock = pygame.time.Clock()
-
-# Game Variables
-gravity = 0.25
-bird_movement = 0
-game_active = True
-
-# 1. 사용자 게임 초기화 (배경화면, 게임 이미지, 좌표, 속도, 폰트 등)
-
+# Functions
 def draw_floor():
     screen.blit(floor_surface,(floor_x_pos, screen_height - floor_height))
     screen.blit(floor_surface,(floor_x_pos + screen_width, screen_height - floor_height))
@@ -62,6 +45,47 @@ def bird_animation():
     # 이전 새의 위치 좌표를 다음 날개 움직임 이미지에 불러와야하고, 이는 bird_rect.centery 를 통해 할당할 수 있습니다.
     return new_bird, new_bird_rect
 
+def score_display(game_state):
+    if game_state == "main_game":
+        score_surface = game_font.render(str(int(score)), True, (255,255,255)) # 두번째 인자는 안티앨리어싱 유무, 세번째는 rgb
+        score_rect = score_surface.get_rect(center = (screen_width / 2, 100))
+        screen.blit(score_surface, score_rect)
+    if game_state == "game_over":
+        score_surface = game_font.render(f"Score: {int(score)}", True, (255,255,255))
+        score_rect = score_surface.get_rect(center = (screen_width / 2, 100))
+        screen.blit(score_surface, score_rect)
+
+        high_score_surface = game_font.render(f"High score: {int(high_score)}", True, (255,255,255))
+        high_score_rect = high_score_surface.get_rect(center = (screen_width / 2, 850))
+        screen.blit(high_score_surface, high_score_rect)
+
+def update_score(score, high_score):
+    if score > high_score:
+        high_score = score
+    return high_score
+
+pygame.init()
+
+screen_width = 576
+screen_height = 1024
+screen = pygame.display.set_mode((screen_width, screen_height))
+
+pygame.display.set_caption("Flappy Bird")
+
+# FPS
+clock = pygame.time.Clock()
+
+game_font = pygame.font.Font("04B_19.ttf", 40)
+
+# Game Variables
+gravity = 0.25
+bird_movement = 0
+game_active = True
+score = 0
+high_score = 0
+
+# 1. 사용자 게임 초기화 (배경화면, 게임 이미지, 좌표, 속도, 폰트 등)
+
 bg_surface = pygame.image.load("assets/background-day.png").convert()
 bg_surface = pygame.transform.scale2x(bg_surface)
 
@@ -90,6 +114,9 @@ SPAWNPIPE = pygame.USEREVENT
 pygame.time.set_timer(SPAWNPIPE, 1200)
 pipe_height = [400, 600, 800]
 
+game_over_surface = pygame.transform.scale2x(pygame.image.load("assets/message.png").convert_alpha())
+game_over_rect = game_over_surface.get_rect(center = (screen_width / 2, screen_height / 2 ))
+
 running = True
 while running:
     dt = clock.tick(120)
@@ -103,11 +130,12 @@ while running:
             if event.key == pygame.K_SPACE and game_active == True:
                 bird_movement = 0
                 bird_movement -= 12
-            if event.key == pygame.K_SPACE and game_active == False:
+            if event.key == pygame.K_SPACE and game_active == False: # regame
                 game_active = True
                 pipe_list.clear()
                 bird_rect.center = (100, screen_height / 2)
                 bird_movement = 0
+                score = 0
 
         if event.type == SPAWNPIPE:
             pipe_list.extend(create_pipe())
@@ -119,7 +147,7 @@ while running:
                 bird_index = 0
                 
             bird_surface, bird_rect = bird_animation()
-            
+
     # 3. 게임 캐릭터 위치 정의
 
     # 4. 충돌 처리
@@ -138,6 +166,14 @@ while running:
         # pipes
         pipe_list = move_pipes(pipe_list)
         draw_pipes(pipe_list)
+
+        # score
+        score += 0.01
+        score_display("main_game")
+    else:
+        screen.blit(game_over_surface, game_over_rect)
+        high_score = update_score(score, high_score)
+        score_display("game_over")
 
     # floor
     floor_x_pos -= 1
