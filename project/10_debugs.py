@@ -14,7 +14,8 @@ def create_pipe():
 def move_pipes(pipes):
     for pipe in pipes:
         pipe.centerx -= 5
-    return pipes
+    visible_pipes = [pipe for pipe in pipes if pipe.right > -50]
+    return visible_pipes
 
 def draw_pipes(pipes):
     for pipe in pipes:
@@ -25,12 +26,17 @@ def draw_pipes(pipes):
             screen.blit(flip_pipe, pipe)
 
 def check_collision(pipes):
+    global can_score
+
     for pipe in pipes:
         if bird_rect.colliderect(pipe):
             death_sound.play()
+            can_score = True
             return False
 
     if bird_rect.top <= -100 or bird_rect.bottom >= 900:
+        death_sound.play()
+        can_score = True
         return False
 
     return True
@@ -63,6 +69,18 @@ def update_score(score, high_score):
         high_score = score
     return high_score
 
+def pipe_score_check():
+    global score, can_score
+
+    if pipe_list:
+        for pipe in pipe_list:
+            if 95 < pipe.centerx < 105 and can_score == True:
+                score += 1
+                score_sound.play()
+                can_score = False
+            if pipe.centerx < 0:
+                can_score = True
+
 # pygame.mixer.pre_init(frequency = 44100, size = 16, channels = 1, buffer = 512) # 빈도 기본값 | 파일 크기 기본값 | 채널 기본값(2)
 pygame.init()
 
@@ -83,8 +101,9 @@ bird_movement = 0
 game_active = True
 score = 0
 high_score = 0
+can_score = True
 
-# 1. 사용자 게임 초기화 (배경화면, 게임 이미지, 좌표, 속도, 폰트 등)
+# 사용자 게임 초기화 (배경화면, 게임 이미지, 좌표, 속도, 폰트 등)
 
 bg_surface = pygame.image.load("assets/background-day.png").convert()
 bg_surface = pygame.transform.scale2x(bg_surface)
@@ -117,16 +136,16 @@ pipe_height = [400, 600, 800]
 game_over_surface = pygame.transform.scale2x(pygame.image.load("assets/message.png").convert_alpha())
 game_over_rect = game_over_surface.get_rect(center = (screen_width / 2, screen_height / 2 ))
 
+# sounds
 flap_sound = pygame.mixer.Sound('sound/sfx_wing.wav')
 death_sound = pygame.mixer.Sound('sound/sfx_die.wav')
 score_sound = pygame.mixer.Sound('sound/sfx_point.wav')
-score_sound_countdown = 100
 
 running = True
 while running:
     dt = clock.tick(120)
 
-    # 2. 이벤트 처리 (키보드, 마우스 등)
+    # 2. event loop
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -145,6 +164,7 @@ while running:
 
         if event.type == SPAWNPIPE:
             pipe_list.extend(create_pipe())
+            print(pipe_list)
 
         if event.type == BIRDFLAP:
             if bird_index < 2:
@@ -169,6 +189,7 @@ while running:
         draw_pipes(pipe_list)
 
         # Score
+        pipe_score_check()
         score_display("main_game")
     else:
         screen.blit(game_over_surface, game_over_rect)

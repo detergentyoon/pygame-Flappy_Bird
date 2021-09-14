@@ -57,9 +57,7 @@ def rotate_bird(bird):
 
 def bird_animation():
     new_bird = bird_frames[bird_index]
-    new_bird_rect = new_bird.get_rect(center = (100, bird_rect.centery)) # 이전 새의 위치
-    # 새의 위치 좌표는 x 값은 항상 왼쪽 100px 로 고정되어있지만 y 값은 중력과 점프에 의해 계속해서 변화하기 때문에
-    # 이전 새의 위치 좌표를 다음 날개 움직임 이미지에 불러와야하고, 이는 bird_rect.centery 를 통해 할당할 수 있습니다.
+    new_bird_rect = new_bird.get_rect(center = (100, bird_rect.centery))
     return new_bird, new_bird_rect
 
 bg_surface = pygame.image.load("assets/background-day.png").convert()
